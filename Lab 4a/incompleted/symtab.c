@@ -82,6 +82,19 @@ void freeType(Type* type) {
 
 int sizeOfType(Type* type) {
   // TODO
+  switch (type->typeClass)
+  {
+  case TP_INT:
+    return 4;
+    break;
+  case TP_CHAR:
+    return 4;
+    break;
+  case TP_ARRAY:
+    return type->arraySize * 4;
+    break;
+  }
+
 }
 
 /******************* Constant utility ******************************/
@@ -342,6 +355,8 @@ void exitBlock(void) {
 
 void declareObject(Object* obj) {
   // TODO: rewrite the function to fill all values of attributes
+  
+
 }
 
 

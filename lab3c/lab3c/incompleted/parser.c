@@ -223,7 +223,7 @@ ConstantValue* compileUnsignedConstant(void) {
   case TK_IDENT:
     eat(TK_IDENT);
     // TODO: check if the constant identifier is declared and get its value
-    obj = checkDeclaredConstant(currentToken->value);
+    obj = checkDeclaredConstant(currentToken->string);
     if (obj != NULL)
         constValue = duplicateConstantValue(obj->constAttrs->value);
     else
@@ -277,7 +277,7 @@ ConstantValue* compileConstant2(void) {
   case TK_IDENT:
     eat(TK_IDENT);
     // TODO: check if the integer constant identifier is declared and get its value
-    obj = checkDeclaredConstant(currentToken->value);
+    obj = checkDeclaredConstant(currentToken->string);
     if (obj != NULL)
         constValue = duplicateConstantValue(obj->constAttrs->value);
     else
