@@ -49,9 +49,3 @@ CharCode charCodes[256] = {
   CHAR_UNKNOWN, CHAR_UNKNOWN, CHAR_UNKNOWN, CHAR_UNKNOWN, CHAR_UNKNOWN, CHAR_UNKNOWN, CHAR_UNKNOWN, CHAR_UNKNOWN
 };
 
-
-int main()
-{
-  printf("%s", charCodes[65]);
-  return 0;
-}
