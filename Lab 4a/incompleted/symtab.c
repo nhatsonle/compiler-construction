@@ -80,22 +80,23 @@ void freeType(Type* type) {
   }
 }
 
-int sizeOfType(Type* type) {
-  // TODO
-  switch (type->typeClass)
-  {
+int sizeOfType(Type *type) {
+  /* Kích thước kiểu trong bộ nhớ máy ảo:
+   * - int, char chiếm 1 word
+   * - mảng: arraySize * kích thước phần tử
+   */
+  switch (type->typeClass) {
   case TP_INT:
-    return 4;
-    break;
+    return INT_SIZE;
   case TP_CHAR:
-    return 4;
-    break;
+    return CHAR_SIZE;
   case TP_ARRAY:
-    return type->arraySize * 4;
-    break;
+    return type->arraySize * sizeOfType(type->elementType);
+  default:
+    return 0;
   }
-
 }
+
 
 /******************* Constant utility ******************************/
 
@@ -353,10 +354,99 @@ void exitBlock(void) {
   symtab->currentScope = symtab->currentScope->outer;
 }
 
-void declareObject(Object* obj) {
-  // TODO: rewrite the function to fill all values of attributes
-  
+void declareObject(Object *obj) {
+  /* Khởi tạo đầy đủ các thuộc tính phụ thuộc vào phạm vi và loại đối tượng:
+   * - PROGRAM / hàm / thủ tục: thiết lập liên kết scope.outer
+   * - biến / tham số: thiết lập scope, localOffset và cập nhật frameSize
+   * - tham số: đồng thời gắn vào danh sách tham số của hàm/thủ tục sở hữu
+   */
 
+  /* Không có currentScope: đối tượng toàn cục (chương trình, hàm/thủ tục,
+     các hàm/thủ tục chuẩn READ/WRITE) */
+  if (symtab->currentScope == NULL) {
+    addObject(&(symtab->globalObjectList), obj);
+
+    switch (obj->kind) {
+    case OBJ_FUNCTION:
+      /* Hàm toàn cục: scope bao ngoài là NULL, khởi tạo bộ đếm tham số */
+      obj->funcAttrs->scope->outer = NULL;
+      obj->funcAttrs->paramCount = 0;
+      break;
+    case OBJ_PROCEDURE:
+      /* Thủ tục toàn cục: scope bao ngoài là NULL, khởi tạo bộ đếm tham số */
+      obj->procAttrs->scope->outer = NULL;
+      obj->procAttrs->paramCount = 0;
+      break;
+    case OBJ_PROGRAM:
+      /* scope của chương trình đã được tạo với outer = NULL trong createProgramObject */
+      break;
+    default:
+      break;
+    }
+    return;
+  }
+
+  /* Có currentScope: đối tượng nằm trong một khối (program / function / procedure) */
+  switch (obj->kind) {
+  case OBJ_VARIABLE:
+    /* Biến cục bộ: xếp trên frame hiện tại ngay sau các ô đã dùng */
+    obj->varAttrs->scope = symtab->currentScope;
+    obj->varAttrs->localOffset = symtab->currentScope->frameSize;
+    symtab->currentScope->frameSize += sizeOfType(obj->varAttrs->type);
+    break;
+
+  case OBJ_PARAMETER: {
+    /* Tham số hình thức: nằm trong frame của hàm/thủ tục */
+    Object *owner = symtab->currentScope->owner;
+
+    obj->paramAttrs->scope = symtab->currentScope;
+    obj->paramAttrs->localOffset = symtab->currentScope->frameSize;
+
+    /* Tham số truyền giá trị chiếm kích thước của chính kiểu đó,
+       tham số VAR chỉ là một địa chỉ (1 word) */
+    if (obj->paramAttrs->kind == PARAM_VALUE)
+      symtab->currentScope->frameSize += sizeOfType(obj->paramAttrs->type);
+    else
+      symtab->currentScope->frameSize += INT_SIZE;
+
+    if (owner != NULL) {
+      switch (owner->kind) {
+      case OBJ_FUNCTION:
+        addObject(&(owner->funcAttrs->paramList), obj);
+        owner->funcAttrs->paramCount++;
+        break;
+      case OBJ_PROCEDURE:
+        addObject(&(owner->procAttrs->paramList), obj);
+        owner->procAttrs->paramCount++;
+        break;
+      default:
+        break;
+      }
+    }
+    break;
+  }
+
+  case OBJ_FUNCTION:
+    /* Hàm lồng nhau: scope bao ngoài là scope hiện tại */
+    obj->funcAttrs->scope->outer = symtab->currentScope;
+    obj->funcAttrs->paramCount = 0;
+    break;
+
+  case OBJ_PROCEDURE:
+    /* Thủ tục lồng nhau: scope bao ngoài là scope hiện tại */
+    obj->procAttrs->scope->outer = symtab->currentScope;
+    obj->procAttrs->paramCount = 0;
+    break;
+
+  case OBJ_CONSTANT:
+  case OBJ_TYPE:
+  case OBJ_PROGRAM:
+  default:
+    /* Không cần thêm thuộc tính phụ cho các loại này trong scope cục bộ */
+    break;
+  }
+
+  addObject(&(symtab->currentScope->objList), obj);
 }
 
 
