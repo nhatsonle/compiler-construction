@@ -397,7 +397,7 @@ void declareObject(Object *obj) {
 
   case OBJ_PARAMETER: {
     /* Tham số hình thức: nằm trong frame của hàm/thủ tục */
-    Object *owner = symtab->currentScope->owner;
+      Object *owner = symtab->currentScope->owner;
 
     obj->paramAttrs->scope = symtab->currentScope;
     obj->paramAttrs->localOffset = symtab->currentScope->frameSize;
@@ -436,17 +436,17 @@ void declareObject(Object *obj) {
     /* Thủ tục lồng nhau: scope bao ngoài là scope hiện tại */
     obj->procAttrs->scope->outer = symtab->currentScope;
     obj->procAttrs->paramCount = 0;
-    break;
+      break;
 
   case OBJ_CONSTANT:
   case OBJ_TYPE:
   case OBJ_PROGRAM:
-  default:
+    default:
     /* Không cần thêm thuộc tính phụ cho các loại này trong scope cục bộ */
-    break;
-  }
+      break;
+    }
 
-  addObject(&(symtab->currentScope->objList), obj);
+    addObject(&(symtab->currentScope->objList), obj);
 }
 
 
